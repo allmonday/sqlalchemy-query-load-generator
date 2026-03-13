@@ -67,7 +67,7 @@ stmt = select(User).options(*options)
 ## Installation
 
 ```bash
-pip install sqlalchemy-load-generator
+pip install sqlalchemy-load
 ```
 
 ## Usage
@@ -75,7 +75,7 @@ pip install sqlalchemy-load-generator
 ```python
 from sqlalchemy import select
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy_load_generator import LoadGenerator
+from sqlalchemy_load import LoadGenerator
 
 # Initialize with your DeclarativeBase
 generator = LoadGenerator(Base)
@@ -156,7 +156,7 @@ stmt = select(User).options(*options)
 ## Error Handling
 
 ```python
-from sqlalchemy_load_generator import (
+from sqlalchemy_load import (
     LoadGenerator,
     ParseError,
     FieldNotFoundError,

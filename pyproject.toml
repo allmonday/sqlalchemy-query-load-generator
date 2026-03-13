@@ -3,8 +3,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "sqlalchemy-load-generator"
-version = "0.1.0"
+name = "sqlalchemy-load"
+version = "0.2.0"
 description = "Generate SQLAlchemy query optimization options from simplified field selection syntax"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -24,4 +24,4 @@ testpaths = ["tests"]
 pythonpath = ["src"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/sqlalchemy_query_load_generator"]
+packages = ["src/sqlalchemy_load"]

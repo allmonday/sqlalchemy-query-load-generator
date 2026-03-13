@@ -4,8 +4,8 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload, load_only
 
-from sqlalchemy_query_load_generator.generator import LoadGenerator
-from sqlalchemy_query_load_generator.errors import FieldNotFoundError, RelationshipNotFoundError
+from sqlalchemy_load.generator import LoadGenerator
+from sqlalchemy_load.errors import FieldNotFoundError, RelationshipNotFoundError
 
 from conftest import Base, User, Post, Comment, Profile
 

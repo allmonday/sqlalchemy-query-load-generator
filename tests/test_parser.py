@@ -2,12 +2,12 @@
 
 import pytest
 
-from sqlalchemy_query_load_generator.parser import (
+from sqlalchemy_load.parser import (
     FieldSelection,
     parse_query_string,
     parse_query_string_cached,
 )
-from sqlalchemy_query_load_generator.errors import ParseError
+from sqlalchemy_load.errors import ParseError
 
 
 class TestParseQueryString:
