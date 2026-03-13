@@ -76,6 +76,8 @@ stmt = select(User).options(*options)
 pip install sqlalchemy-load
 ```
 
+> Requires Python 3.10+
+
 ## Usage
 
 ```python
