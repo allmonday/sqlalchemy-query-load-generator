@@ -56,6 +56,38 @@ class TestParseQueryString:
             relationships={}
         )
 
+    def test_newlines_with_nested_relationships(self):
+        """Parse nested relationships with newlines and indentation."""
+        query = """
+        {
+            id
+            name
+            posts {
+                title
+                comments {
+                    content
+                    author
+                }
+            }
+        }
+        """
+        result = parse_query_string(query)
+
+        assert result == FieldSelection(
+            fields={"id", "name"},
+            relationships={
+                "posts": FieldSelection(
+                    fields={"title"},
+                    relationships={
+                        "comments": FieldSelection(
+                            fields={"content", "author"},
+                            relationships={}
+                        )
+                    }
+                )
+            }
+        )
+
     def test_fields_with_optional_commas(self):
         """Parse fields with optional comma separators."""
         result = parse_query_string("{ id, name, email }")
