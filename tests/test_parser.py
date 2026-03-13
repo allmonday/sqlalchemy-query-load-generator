@@ -2,7 +2,11 @@
 
 import pytest
 
-from sqlalchemy_query_load_generator.parser import FieldSelection, parse_query_string
+from sqlalchemy_query_load_generator.parser import (
+    FieldSelection,
+    parse_query_string,
+    parse_query_string_cached,
+)
 from sqlalchemy_query_load_generator.errors import ParseError
 
 
@@ -160,3 +164,65 @@ class TestFieldSelection:
         sel2 = FieldSelection(fields={"name", "id"}, relationships={})
 
         assert sel1 == sel2
+
+
+class TestParseQueryStringCached:
+    """Tests for parse_query_string_cached function."""
+
+    def test_cached_returns_same_result(self):
+        """Cached function should return same result as uncached."""
+        query = "{ id name posts { title } }"
+        result1 = parse_query_string_cached(query)
+        result2 = parse_query_string(query)
+
+        assert result1 == result2
+
+    def test_cache_hit(self):
+        """Same query string should return cached result."""
+        query = "{ id name email }"
+
+        result1 = parse_query_string_cached(query)
+        result2 = parse_query_string_cached(query)
+
+        # Should be the exact same object (cached)
+        assert result1 is result2
+
+    def test_cache_different_queries(self):
+        """Different query strings should return different results."""
+        result1 = parse_query_string_cached("{ id }")
+        result2 = parse_query_string_cached("{ name }")
+
+        # Should be different objects
+        assert result1 is not result2
+
+    def test_cache_with_nested_queries(self):
+        """Cache should work with nested queries."""
+        query = "{ id posts { title comments { content } } }"
+
+        result1 = parse_query_string_cached(query)
+        result2 = parse_query_string_cached(query)
+
+        assert result1 is result2
+
+    def test_cache_clear(self):
+        """Cache can be cleared."""
+        query = "{ id name }"
+
+        result1 = parse_query_string_cached(query)
+        parse_query_string_cached.cache_clear()
+        result2 = parse_query_string_cached(query)
+
+        # After clear, should be different objects
+        assert result1 is not result2
+
+    def test_cache_info(self):
+        """Cache info should be available."""
+        parse_query_string_cached.cache_clear()
+
+        parse_query_string_cached("{ id }")
+        parse_query_string_cached("{ id }")  # cache hit
+        parse_query_string_cached("{ name }")
+
+        info = parse_query_string_cached.cache_info()
+        assert info.hits >= 1
+        assert info.misses >= 2

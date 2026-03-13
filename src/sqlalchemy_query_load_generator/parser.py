@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Any
 
 from .errors import ParseError
@@ -92,3 +93,20 @@ def _parse_selection(tokens: list[str], index: int) -> tuple[FieldSelection, int
         raise ParseError("Empty selection set")
 
     return FieldSelection(fields=fields, relationships=relationships), index
+
+
+@lru_cache(maxsize=256)
+def parse_query_string_cached(query_string: str) -> FieldSelection:
+    """
+    Parse and cache the result. Queries are often repeated.
+
+    This is a cached wrapper around parse_query_string for better performance
+    when the same query strings are used multiple times.
+
+    Args:
+        query_string: Field selection like "{ id name posts { title } }"
+
+    Returns:
+        FieldSelection with fields and nested relationships
+    """
+    return parse_query_string(query_string)
