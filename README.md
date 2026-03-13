@@ -1,5 +1,11 @@
 # SQLAlchemy Load Generator
 
+> Declare what you need, we optimize the rest.
+
+[![pypi](https://img.shields.io/pypi/v/sqlalchemy-load.svg)](https://pypi.python.org/pypi/sqlalchemy-load)
+[![PyPI Downloads](https://static.pepy.tech/badge/sqlalchemy-load/month)](https://pepy.tech/projects/sqlalchemy-load)
+![Python Versions](https://img.shields.io/pypi/pyversions/sqlalchemy-load)
+
 Generate SQLAlchemy query optimization options (`selectinload` + `load_only`) from simplified field selection syntax.
 
 ## Why This Library?
