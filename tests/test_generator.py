@@ -7,7 +7,12 @@ from sqlalchemy.orm import selectinload, load_only
 from sqlalchemy_load.generator import LoadGenerator
 from sqlalchemy_load.errors import FieldNotFoundError, RelationshipNotFoundError
 
-from conftest import Base, User, Post, Comment, Profile
+
+from conftest import Base, User, Post, Comment, Profile, Group
+from sqlalchemy.orm import selectinload, load_only
+
+from sqlalchemy_load.generator import LoadGenerator
+from sqlalchemy_load.errors import FieldNotFoundError, RelationshipNotFoundError
 
 
 class TestLoadGenerator:
@@ -34,6 +39,7 @@ class TestLoadGenerator:
         assert Post in generator._metadata_cache
         assert Comment in generator._metadata_cache
         assert Profile in generator._metadata_cache
+        assert Group in generator._metadata_cache
 
     def test_init_detects_relationships(self):
         """LoadGenerator should detect relationships from model metadata."""
@@ -70,7 +76,10 @@ class TestLoadGenerator:
         options = generator.generate(User, "{ name posts { title } }")
 
         assert isinstance(options, list)
-        assert len(options) == 2  # load_only for name, selectinload for posts
+        assert len(options) == 2  # load_only for name, selectinload(posts).options(load_only(Post.title))
+        # Verify the structure: first is load_only, second is selectinload
+        assert options[0].__class__.__name__ == 'Load'
+        assert options[1].__class__.__name__ == 'Load'
 
     def test_generate_with_deeply_nested_relationships(self):
         """Generate options with deeply nested relationships."""
@@ -79,7 +88,10 @@ class TestLoadGenerator:
 
         assert isinstance(options, list)
         # Should have load_only + selectinload(posts)
-        assert len(options) >= 1
+        assert len(options) == 2
+        # Verify the structure: first is load_only, second is selectinload for posts
+        assert options[0].__class__.__name__ == 'Load'
+        assert options[1].__class__.__name__ == 'Load'
 
     def test_generate_with_multiple_relationships(self):
         """Generate options with multiple relationships."""
@@ -88,12 +100,12 @@ class TestLoadGenerator:
 
         assert isinstance(options, list)
         # load_only + selectinload(posts) + selectinload(profile)
-        assert len(options) >= 2
+        assert len(options) == 3
 
     def test_generate_empty_selection_raises_error(self):
         """Empty selection should raise ParseError."""
         generator = LoadGenerator(Base)
-        with pytest.raises(Exception):  # ParseError
+        with pytest.raises(Exception):
             generator.generate(User, "{}")
 
     def test_generate_invalid_field_raises_error(self):
@@ -112,18 +124,18 @@ class TestLoadGenerator:
         """Should validate fields in nested relationships."""
         generator = LoadGenerator(Base)
         with pytest.raises(FieldNotFoundError):
-            generator.generate(User, "{ posts { nonexistent } }")
+            generator.generate(User, "{ posts { nonexistent } } }")
 
     def test_generate_works_with_different_models(self):
         """LoadGenerator should work with different model classes using same instance."""
         generator = LoadGenerator(Base)
 
         # Generate for User
-        user_options = generator.generate(User, "{ name email }")
+        user_options = generator.generate(User, "{ name email}")
         assert isinstance(user_options, list)
 
         # Generate for Post using same generator
-        post_options = generator.generate(Post, "{ title content }")
+        post_options = generator.generate(Post, "{ title content } }")
         assert isinstance(post_options, list)
 
     def test_generate_single_relationship_field(self):
@@ -144,8 +156,8 @@ class TestLoadGenerator:
         """Same query should return cached result."""
         generator = LoadGenerator(Base)
 
-        options1 = generator.generate(User, "{ name email }")
-        options2 = generator.generate(User, "{ name email }")
+        options1 = generator.generate(User, "{ name email}")
+        options2 = generator.generate(User, "{ name email}")
 
         # Should return the same cached object
         assert options1 is options2
@@ -154,8 +166,8 @@ class TestLoadGenerator:
         """Different queries should return different results."""
         generator = LoadGenerator(Base)
 
-        options1 = generator.generate(User, "{ name }")
-        options2 = generator.generate(User, "{ email }")
+        options1 = generator.generate(User, "{ name}")
+        options2 = generator.generate(User, "{ email}")
 
         # Should return different objects
         assert options1 is not options2
@@ -180,7 +192,7 @@ class TestLoadGenerator:
     def test_generate_only_relationships_no_fields(self):
         """Query with only relationships, no scalar fields."""
         generator = LoadGenerator(Base)
-        options = generator.generate(User, "{ posts { title } profile { bio } }")
+        options = generator.generate(User, "{ posts { title } profile { bio} }")
 
         assert isinstance(options, list)
         # Should have 2 selectinload, no load_only
@@ -212,7 +224,7 @@ class TestLoadGeneratorIntegration:
         session.commit()
 
         generator = LoadGenerator(Base)
-        options = generator.generate(User, "{ name email }")
+        options = generator.generate(User, "{ name email}")
 
         stmt = select(User).options(*options).where(User.id == user.id)
         result = session.execute(stmt).scalar_one()
@@ -250,7 +262,7 @@ class TestLoadGeneratorIntegration:
         session.commit()
 
         generator = LoadGenerator(Base)
-        options = generator.generate(User, "{ name posts { title comments { content } } }")
+        options = generator.generate(User, "{ name posts { title comments { content} } }")
 
         stmt = select(User).options(*options).where(User.id == user.id)
         result = session.execute(stmt).scalar_one()
@@ -270,7 +282,7 @@ class TestLoadGeneratorIntegration:
         session.commit()
 
         generator = LoadGenerator(Base)
-        options = generator.generate(User, "{ name profile { bio } }")
+        options = generator.generate(User, "{ name profile { bio} }")
 
         stmt = select(User).options(*options).where(User.id == user.id)
         result = session.execute(stmt).scalar_one()
@@ -289,7 +301,7 @@ class TestLoadGeneratorIntegration:
         session.commit()
 
         generator = LoadGenerator(Base)
-        options = generator.generate(Post, "{ title author { name } }")
+        options = generator.generate(Post, "{ title author { name} }")
 
         stmt = select(Post).options(*options).where(Post.id == post.id)
         result = session.execute(stmt).scalar_one()
@@ -310,7 +322,7 @@ class TestLoadGeneratorIntegration:
 
         generator = LoadGenerator(Base)
         # Only relationships, no scalar fields
-        options = generator.generate(User, "{ posts { title } profile { bio } }")
+        options = generator.generate(User, "{ posts { title } profile { bio} }")
 
         stmt = select(User).options(*options).where(User.id == user.id)
         result = session.execute(stmt).scalar_one()
@@ -321,3 +333,24 @@ class TestLoadGeneratorIntegration:
         assert len(result.posts) == 1
         assert result.posts[0].title == "Test Post"
         assert result.profile.bio == "Test Bio"
+
+    def test_query_with_many_to_many_relationship(self, session):
+        """Test actual query with many-to-many relationship."""
+        # Create test data
+        user = User(name="Test User", email="test@example.com")
+        group1 = Group(name="Admin")
+        group2 = Group(name="Developer")
+        user.groups = [group1, group2]
+        session.add_all([user, group1, group2])
+        session.commit()
+
+        generator = LoadGenerator(Base)
+        options = generator.generate(User, "{ name groups { name} }")
+
+        stmt = select(User).options(*options).where(User.id == user.id)
+        result = session.execute(stmt).scalar_one()
+
+        assert result.name == "Test User"
+        # groups should be loaded (many-to-many)
+        assert len(result.groups) == 2
+        assert {g.name for g in result.groups} == {"Admin", "Developer"}
